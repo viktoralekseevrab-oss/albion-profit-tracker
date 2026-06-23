@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id             String          @id @default(uuid())
+  username       String          @unique
+  password       String
+  items          Item[]
+  lots           Lot[]
+  resourcePrices ResourcePrice[]
+}
+
+model City {
+  id             String          @id @default(uuid())
+  name           String
+  slug           String          @unique
+  resourcePrices ResourcePrice[]
+  itemCityData   ItemCityData[]
+  lots           Lot[]
+}
+
+model Resource {
+  id             String          @id @default(uuid())
+  name           String          @unique
+  category       String
+  tier           Int
+  enchant        Int
+  prices         ResourcePrice[]
+  itemResources  ItemResource[]
+}
+
+model ResourcePrice {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  cityId     String
+  city       City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  price      Float    @default(0)
+
+  @@unique([userId, resourceId, cityId])
+}
+
+model Item {
+  id            String         @id @default(uuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  image         String?
+  returnPercent Float          @default(15.2)
+  useReturn     Boolean        @default(true)
+  quantity      Int            @default(1)
+  resources     ItemResource[]
+  cityData      ItemCityData[]
+  lots          Lot[]
+  createdAt     DateTime       @default(now())
+}
+
+model ItemResource {
+  id         String   @id @default(uuid())
+  itemId     String
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  qty        Float
+}
+
+model ItemCityData {
+  id         String @id @default(uuid())
+  itemId     String
+  item       Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  cityId     String
+  city       City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  craftCost  Float  @default(0)
+  sellPrice  Float  @default(0)
+  taxPercent Float  @default(10.5)
+
+  @@unique([itemId, cityId])
+}
+
+model Lot {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId            String
+  item              Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  cityId            String
+  city              City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  dateCreated       DateTime @default(now())
+  quantityTotal     Int
+  quantityRemaining Int
+  quantitySold      Int      @default(0)
+  costPerUnit       Float
+  totalCost         Float
+  sellPricePerUnit  Float
+  totalRevenue      Float    @default(0)
+  commissionPaid    Float    @default(0)
+}

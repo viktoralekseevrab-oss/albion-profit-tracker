@@ -1,0 +1,16 @@
+window.cities = [];
+window.selectedCityId = '';
+window.resourceDefinitions = [];
+window.cityResources = {};
+window.items = [];
+window.lots = [];
+window.currentTab = 'dashboard';
+window.itemSort = 'az';
+window.lotSort = 'newest';
+window.itemsSearch = '';
+window.lotsSearch = '';
+window.resourcesSearch = '';
+window.resourcesFilter = { category: 'all', tier: 'all', enchant: 'all', cityId: null };
+window.dashboardSort = { field: 'profit', asc: false };
+window.selectedItemId = null;
+window.selectedLotId = null;
