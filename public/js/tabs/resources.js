@@ -48,11 +48,14 @@ function renderResourcesPage() {
                 <button class="btn-sm btn-copy" onclick="copyPricesFromCity()">📋 Копировать из другого города</button>
             </div>
             <table>
-                <thead><tr><th>Ресурс</th><th>Тир</th><th>Чар</th><th>Цена</th></tr></thead>
+                <thead><tr><th>Ресурс</th><th>Тир</th><th>Чар</th><th>Цена</th><th>Действия</th></tr></thead>
                 <tbody>${filtered.map(r => `<tr>
-                    <td>${escapeHtml(r.name)}</td><td>T${r.tier}</td><td>.${r.enchant}</td>
-                    <td><input type="number" value="${prices[r.name]??0}" step="any" onchange="updateResourcePrice('${escapeHtml(r.name)}', '${cityId}', parseFloat(this.value)||0)"></td>
-                </tr>`).join('')}</tbody>
+    <td>${escapeHtml(r.name)}</td>
+    <td>T${r.tier}</td>
+    <td>.${r.enchant}</td>
+    <td><input type="number" value="${prices[r.name]??0}" step="any" onchange="updateResourcePrice('${escapeHtml(r.name)}', '${cityId}', parseFloat(this.value)||0)"></td>
+    <td><button class="btn-sm btn-danger" onclick="deleteResource('${r.id}', '${escapeHtml(r.name)}')">🗑</button></td>
+</tr>`).join('')}</tbody>
             </table>
             <p style="font-size:12px;">Показано ${filtered.length} ресурсов. Изменения влияют на все товары.</p>
         </div>`;
@@ -119,3 +122,22 @@ window.updateResourcesDataList = function() {
         dl.appendChild(option);
     });
 };
+async function deleteResource(resourceId, resourceName) {
+    if (!confirm(`Удалить ресурс "${resourceName}" навсегда? Это может повлиять на товары.`)) return;
+    try {
+        await apiFetch(`/resources/${resourceId}`, { method: 'DELETE' });
+        // Удаляем из локального справочника
+        window.resourceDefinitions = window.resourceDefinitions.filter(r => r.id !== resourceId);
+        // Удаляем цены для всех городов
+        Object.keys(window.cityResources).forEach(cityId => {
+            if (window.cityResources[cityId]) {
+                delete window.cityResources[cityId][resourceName];
+            }
+        });
+        // Обновляем datalist
+        if (typeof updateResourcesDataList === 'function') updateResourcesDataList();
+        renderResourcesPage();
+    } catch (e) {
+        alert('Ошибка удаления: ' + e.message);
+    }
+}

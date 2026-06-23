@@ -11,6 +11,19 @@ export default function (prisma: PrismaClient) {
     const resources = await prisma.resource.findMany();
     res.json(resources);
   });
+  router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
+    const id = req.params.id as string;
+    try {
+        // Удаляем связанные цены и записи в товарах (ItemResource)
+        await prisma.resourcePrice.deleteMany({ where: { resourceId: id } });
+        await prisma.itemResource.deleteMany({ where: { resourceId: id } });
+        await prisma.resource.delete({ where: { id } });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Ошибка удаления ресурса:', err);
+        res.status(400).json({ error: 'Не удалось удалить ресурс' });
+    }
+});
 
   // Получить цены текущего пользователя для всех городов
   router.get('/prices', async (req: AuthRequest, res) => {
