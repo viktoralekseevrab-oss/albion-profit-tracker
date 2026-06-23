@@ -50,7 +50,7 @@ function renderItemCard() {
                    style="width:100%; padding:4px; border-radius:4px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
         </td>
         <td><input type="number" value="${r.qty}" step="any" onchange="updateItemResource(${i}, 'qty', parseFloat(this.value)||0)"></td>
-        <td>${price.toFixed(2)}</td>
+                <td><input type="number" value="${price.toFixed(2)}" step="any" onchange="updateResourcePriceFromItemByIndex(${i}, parseFloat(this.value)||0)" style="width:80px; padding:4px; border-radius:4px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); text-align:center;"></td>
         <td>${eff.toFixed(2)}</td>
         <td>${cost.toFixed(2)}</td>
         <td><button class="btn-sm btn-danger" onclick="deleteItemResource(${i})">✕</button></td>
@@ -310,4 +310,28 @@ async function createLotFromItem() {
     window.lots.push(created);
     window.selectedLotId = created.id;
     switchTab('lots');
+}
+async function updateResourcePriceFromItemByIndex(idx, price) {
+    const item = window.items.find(i => i.id === window.selectedItemId);
+    if (!item) return;
+    const resName = item.resources[idx]?.name || item.resources[idx]?.resource?.name;
+    if (!resName) return;
+
+    // Обновляем локально
+    if (!window.cityResources[window.selectedCityId]) {
+        window.cityResources[window.selectedCityId] = {};
+    }
+    window.cityResources[window.selectedCityId][resName] = price;
+
+    // Сохраняем на сервер
+    await apiFetch('/resources/prices', {
+        method: 'PUT',
+        body: JSON.stringify({
+            cityId: window.selectedCityId,
+            prices: { [resName]: price }
+        }),
+    });
+
+    // Перерисовываем карточку для пересчёта себестоимости и прибыли
+    renderItemCard();
 }
