@@ -7,14 +7,25 @@ export default function (prisma: PrismaClient) {
   router.use(authMiddleware);
 
   async function getResourceId(r: any, tx: any = prisma) {
-    if (r.resourceId) return r.resourceId;
-    if (r.name) {
-      const resource = await tx.resource.findUnique({ where: { name: r.name } });
-      if (!resource) throw new Error(`Ресурс не найден: ${r.name}`);
-      return resource.id;
+  if (r.resourceId) return r.resourceId;
+  if (r.name) {
+    let resource = await tx.resource.findUnique({ where: { name: r.name } });
+    if (!resource) {
+      // Создаём новый ресурс с пометкой "custom"
+      resource = await tx.resource.create({
+        data: {
+          name: r.name,
+          category: 'custom',
+          tier: 0,
+          enchant: 0,
+        },
+      });
+      console.log(`Создан новый ресурс: ${r.name}`);
     }
-    throw new Error('У ресурса должно быть поле name или resourceId');
+    return resource.id;
   }
+  throw new Error('У ресурса должно быть поле name или resourceId');
+}
 
   router.get('/', async (req: AuthRequest, res) => {
     const items = await prisma.item.findMany({

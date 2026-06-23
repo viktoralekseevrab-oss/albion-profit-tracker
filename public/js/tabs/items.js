@@ -37,30 +37,25 @@ function renderItemCard() {
     let totalResCost = 0;
 
     const resRows = item.resources.map((r, i) => {
-        const resName = r.name || r.resource?.name || 'Неизвестный ресурс';
-        const price = getResourcePrice(resName, window.selectedCityId);
-        const eff = r.qty * returnFactor;
-        const cost = eff * price;
-        totalResCost += cost;
+    const resName = r.name || r.resource?.name || 'Неизвестный ресурс';
+    const price = getResourcePrice(resName, window.selectedCityId);
+    const eff = r.qty * returnFactor;
+    const cost = eff * price;
+    totalResCost += cost;
 
-        const options = (window.resourceDefinitions || []).map(def =>
-            `<option value="${escapeHtml(def.name)}" ${def.name === resName ? 'selected' : ''}>${escapeHtml(def.name)}</option>`
-        ).join('');
-
-        return `<tr>
-            <td>
-                <select onchange="updateItemResource(${i}, 'name', this.value)" style="width:100%; padding:4px; border-radius:4px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
-                    <option value="">-- Выберите ресурс --</option>
-                    ${options}
-                </select>
-            </td>
-            <td><input type="number" value="${r.qty}" step="any" onchange="updateItemResource(${i}, 'qty', parseFloat(this.value)||0)"></td>
-            <td>${price.toFixed(2)}</td>
-            <td>${eff.toFixed(2)}</td>
-            <td>${cost.toFixed(2)}</td>
-            <td><button class="btn-sm btn-danger" onclick="deleteItemResource(${i})">✕</button></td>
-        </tr>`;
-    }).join('');
+    return `<tr>
+        <td>
+            <input type="text" list="resourcesDataList" value="${escapeHtml(resName)}" 
+                   onchange="updateItemResource(${i}, 'name', this.value)" 
+                   style="width:100%; padding:4px; border-radius:4px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
+        </td>
+        <td><input type="number" value="${r.qty}" step="any" onchange="updateItemResource(${i}, 'qty', parseFloat(this.value)||0)"></td>
+        <td>${price.toFixed(2)}</td>
+        <td>${eff.toFixed(2)}</td>
+        <td>${cost.toFixed(2)}</td>
+        <td><button class="btn-sm btn-danger" onclick="deleteItemResource(${i})">✕</button></td>
+    </tr>`;
+}).join('');
 
     const totalCost = totalResCost + cd.craftCost;
     const revenue = cd.sellPrice * (1 - cd.taxPercent / 100);
@@ -202,7 +197,7 @@ async function saveItem(item) {
         });
         updated.cityData = cdObj;
     }
-    // Нормализация ресурсов: обязательно вытаскиваем name из resource
+    // Нормализация ресурсов
     if (updated.resources) {
         updated.resources = updated.resources.map(r => ({
             ...r,
@@ -212,6 +207,13 @@ async function saveItem(item) {
 
     const idx = window.items.findIndex(i => i.id === item.id);
     if (idx !== -1) window.items[idx] = updated;
+
+    // ✅ Обновляем глобальный справочник и datalist
+    window.resourceDefinitions = await apiFetch('/resources');
+    if (typeof updateResourcesDataList === 'function') {
+        updateResourcesDataList();
+    }
+
     return updated;
 }
 
